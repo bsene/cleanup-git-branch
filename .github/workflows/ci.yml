@@ -27,6 +27,9 @@ jobs:
       - name: Verify modules
         run: go mod verify
 
+      - name: Verify entrypoint exists
+        run: test -f cmd/cleanup-git-branch/main.go
+
       - name: Build
         run: go build ./cmd/cleanup-git-branch
 

@@ -19,7 +19,7 @@ vendor/
 go.work
 
 # Local binary built via go build
-cleanup-git-branch
+/cleanup-git-branch
 .agents/
 .claude/
 .pi/
