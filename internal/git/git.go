@@ -56,7 +56,7 @@ func (c *Client) CurrentBranch() (string, error) {
 // ListBranches returns all local branches with their last commit time and
 // merge status relative to the supplied base branch.
 func (c *Client) ListBranches(base string) ([]Branch, error) {
-	format := "%(refname:short)%00%(objectformat:short)%00%(committerdate:iso8601)%00%(HEAD)%00"
+	format := "%(refname:short)%00%(objectname:short)%00%(committerdate:iso8601)%00%(HEAD)%00"
 	out, err := c.Runner.Run("for-each-ref", "--format="+format, "refs/heads/")
 	if err != nil {
 		return nil, err
