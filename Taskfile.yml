@@ -1,0 +1,48 @@
+version: '3'
+
+vars:
+  BINARY: cleanup-git-branch
+
+tasks:
+  build:
+    desc: Build the binary
+    cmds:
+      - go build -o {{.BINARY}} ./cmd/cleanup-git-branch
+
+  test:
+    desc: Run all tests with race detection
+    cmds:
+      - go test -race ./...
+
+  lint:
+    desc: Run Go vet as the baseline linter
+    cmds:
+      - go vet ./...
+
+  mutate:
+    desc: Run mutation testing with a 100% kill threshold
+    cmds:
+      - |
+        set -e
+        for pkg in ./internal/config ./internal/cleaner; do
+          go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 \
+            unleash "$pkg" \
+            --timeout-coefficient 20 --workers 1 --test-cpu 1 \
+            --threshold-efficacy 100
+        done
+
+  verify:
+    desc: Run lint, test, and mutation testing
+    cmds:
+      - task: lint
+      - task: test
+      - task: mutate
+
+  clean:
+    desc: Remove the built binary
+    cmds:
+      - rm -f {{.BINARY}}
+
+  default:
+    cmds:
+      - task: verify
