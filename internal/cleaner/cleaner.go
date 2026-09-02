@@ -69,7 +69,11 @@ func (c *Cleaner) Run(cfg *config.Config) ([]Result, error) {
 		if b.Current {
 			continue
 		}
-		if c.isProtected(b.Name, cfg.Exclude) {
+		protected, err := c.isProtected(b.Name, cfg.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if protected {
 			continue
 		}
 		if b.LastCommit.After(cutoff) {
@@ -112,12 +116,17 @@ func (c *Cleaner) Run(cfg *config.Config) ([]Result, error) {
 }
 
 // isProtected reports whether a branch name matches any of the exclude glob
-// patterns.
-func (c *Cleaner) isProtected(name string, patterns []string) bool {
+// patterns. An invalid pattern returns an error so misconfigurations are
+// surfaced instead of silently ignored.
+func (c *Cleaner) isProtected(name string, patterns []string) (bool, error) {
 	for _, p := range patterns {
-		if matched, _ := path.Match(p, name); matched {
-			return true
+		matched, err := path.Match(p, name)
+		if err != nil {
+			return false, fmt.Errorf("invalid exclude pattern %q: %w", p, err)
+		}
+		if matched {
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }

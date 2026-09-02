@@ -166,8 +166,20 @@ func TestIsProtected(t *testing.T) {
 		{"release/1.0", true},
 		{"feature/foo", false},
 	} {
-		if got := c.isProtected(tc.name, patterns); got != tc.want {
+		got, err := c.isProtected(tc.name, patterns)
+		if err != nil {
+			t.Fatalf("isProtected(%q) unexpected error: %v", tc.name, err)
+		}
+		if got != tc.want {
 			t.Errorf("isProtected(%q) = %v, want %v", tc.name, got, tc.want)
 		}
+	}
+}
+
+func TestIsProtectedInvalidPattern(t *testing.T) {
+	c := NewCleaner(nil)
+	_, err := c.isProtected("main", []string{"[invalid"})
+	if err == nil {
+		t.Fatal("expected error for invalid glob pattern")
 	}
 }
