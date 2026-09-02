@@ -39,6 +39,16 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+      - name: Mutation testing
+        run: |
+          set -e
+          for pkg in ./internal/config ./internal/cleaner; do
+            go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0 \
+              unleash "$pkg" \
+              --timeout-coefficient 20 --workers 1 --test-cpu 1 \
+              --threshold-efficacy 100
+          done
+
       - name: Vulnerability scan
         uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1.1.0
         with:
