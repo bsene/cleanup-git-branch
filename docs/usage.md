@@ -1,3 +1,8 @@
+---
+title: Usage guide
+permalink: /
+---
+
 # cleanup-git-branch usage guide
 
 ## Table of contents
