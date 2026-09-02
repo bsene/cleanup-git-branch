@@ -1,0 +1,5 @@
+module github.com/bsene/cleanup-git-branch
+
+go 1.26.1
+
+require github.com/spf13/pflag v1.0.10
