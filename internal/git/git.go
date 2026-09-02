@@ -26,6 +26,8 @@ type Runner interface {
 type ExecRunner struct{}
 
 func (r ExecRunner) Run(args ...string) (string, error) {
+	// #nosec G204 - argv list, no shell interpreter; caller-side values are
+	// validated (e.g. base branch via check-ref-format) before reaching git.
 	cmd := exec.Command("git", args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -104,8 +106,17 @@ func (c *Client) ListBranches(base string) ([]Branch, error) {
 	return branches, nil
 }
 
+// validateRefName checks that ref looks like a valid branch/ref name.
+func (c *Client) validateRefName(ref string) error {
+	_, err := c.Runner.Run("check-ref-format", "--branch", ref)
+	return err
+}
+
 // mergedBranches returns the set of local branches already merged into base.
 func (c *Client) mergedBranches(base string) (map[string]struct{}, error) {
+	if err := c.validateRefName(base); err != nil {
+		return nil, fmt.Errorf("invalid base branch %q: %w", base, err)
+	}
 	out, err := c.Runner.Run("branch", "--merged", base)
 	if err != nil {
 		return nil, err
@@ -129,7 +140,7 @@ func (c *Client) DeleteBranch(name string, force bool) error {
 	if force {
 		flag = "-D"
 	}
-	_, err := c.Runner.Run("branch", flag, name)
+	_, err := c.Runner.Run("branch", flag, "--", name)
 	return err
 }
 
