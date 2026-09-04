@@ -56,10 +56,16 @@ func Parse(args []string) (*Config, error) {
 		return nil, fmt.Errorf("age-days must be >= 0")
 	}
 
+	// Merge default protected branches with user patterns so that passing
+	// --exclude never unprotects the defaults.
+	merged := make([]string, 0, len(defaultExcludes)+len(cfg.Exclude))
+	merged = append(merged, defaultExcludes...)
+	merged = append(merged, cfg.Exclude...)
+
 	// Deduplicate and clean exclude patterns.
-	seen := make(map[string]struct{}, len(cfg.Exclude))
-	cleaned := make([]string, 0, len(cfg.Exclude))
-	for _, p := range cfg.Exclude {
+	seen := make(map[string]struct{}, len(merged))
+	cleaned := make([]string, 0, len(merged))
+	for _, p := range merged {
 		p = strings.TrimSpace(p)
 		if p == "" {
 			continue

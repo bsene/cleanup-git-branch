@@ -37,7 +37,7 @@ func TestParseFlags(t *testing.T) {
 	if !cfg.Merged {
 		t.Error("expected Merged true")
 	}
-	if len(cfg.Exclude) != 2 || cfg.Exclude[0] != "main" || cfg.Exclude[1] != "foo/*" {
+	if len(cfg.Exclude) != 5 || cfg.Exclude[0] != "main" || cfg.Exclude[1] != "master" || cfg.Exclude[2] != "develop" || cfg.Exclude[3] != "release/*" || cfg.Exclude[4] != "foo/*" {
 		t.Errorf("unexpected excludes: %v", cfg.Exclude)
 	}
 }
@@ -106,7 +106,7 @@ func TestParseAllFlags(t *testing.T) {
 	if !cfg.Verbose {
 		t.Error("expected Verbose true")
 	}
-	if len(cfg.Exclude) != 2 || cfg.Exclude[0] != "main" || cfg.Exclude[1] != "feature/*" {
+	if len(cfg.Exclude) != 5 || cfg.Exclude[0] != "main" || cfg.Exclude[1] != "master" || cfg.Exclude[2] != "develop" || cfg.Exclude[3] != "release/*" || cfg.Exclude[4] != "feature/*" {
 		t.Errorf("unexpected excludes: %v", cfg.Exclude)
 	}
 }
@@ -121,7 +121,7 @@ func TestParseShortFlags(t *testing.T) {
 	if !cfg.Yes || cfg.AgeDays != 45 || !cfg.Merged || cfg.Base != "main" || !cfg.PruneRemotes || !cfg.Verbose {
 		t.Errorf("unexpected config: %+v", cfg)
 	}
-	if len(cfg.Exclude) != 1 || cfg.Exclude[0] != "foo/*" {
+	if len(cfg.Exclude) != 5 || cfg.Exclude[0] != "main" || cfg.Exclude[1] != "master" || cfg.Exclude[2] != "develop" || cfg.Exclude[3] != "release/*" || cfg.Exclude[4] != "foo/*" {
 		t.Errorf("unexpected excludes: %v", cfg.Exclude)
 	}
 }
@@ -131,7 +131,7 @@ func TestParseExcludeCleaning(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	want := []string{"main", "foo/*"}
+	want := []string{"main", "master", "develop", "release/*", "foo/*"}
 	if len(cfg.Exclude) != len(want) {
 		t.Fatalf("expected excludes %v, got %v", want, cfg.Exclude)
 	}
