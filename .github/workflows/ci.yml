@@ -10,35 +10,67 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: ['1.26.1']
-
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
       - name: Set up Go
         uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Verify modules
-        run: go mod verify
-
-      - name: Verify entrypoint exists
-        run: test -f cmd/cleanup-git-branch/main.go
-
-      - name: Build
-        run: go build ./cmd/cleanup-git-branch
-
-      - name: Test
-        run: go test -race ./...
-
+          go-version: '1.26.1'
       - name: Vet
         run: go vet ./...
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Go
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version: '1.26.1'
+      - name: Verify modules
+        run: go mod verify
+      - name: Test
+        run: go test -race ./...
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Go
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version: '1.26.1'
+      - name: Smoke tests
+        run: |
+          set -e
+          for script in scripts/smoke/*.sh; do
+            echo "Running $script..."
+            bash "$script"
+          done
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Go
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version: '1.26.1'
+      - name: Verify entrypoint exists
+        run: test -f cmd/cleanup-git-branch/main.go
+      - name: Build
+        run: go build ./cmd/cleanup-git-branch
+
+  mutate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Go
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version: '1.26.1'
       - name: Mutation testing
         run: |
           set -e
@@ -49,8 +81,16 @@ jobs:
               --threshold-efficacy 100
           done
 
+  vuln:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up Go
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version: '1.26.1'
       - name: Vulnerability scan
         uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1.1.0
         with:
-          go-version-input: ${{ matrix.go-version }}
+          go-version-input: '1.26.1'
           go-package: ./...
