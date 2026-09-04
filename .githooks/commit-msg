@@ -1,0 +1,9 @@
+#!/bin/sh
+# Enforce: commit message is a single line (no body).
+# See AGENTS.md "Git Hygiene".
+lines=$(grep -v '^#' "$1" | grep -c '^[[:space:]]*[^[:space:]]')
+if [ "$lines" -gt 1 ]; then
+    echo "error: commit message must be one line (no body)." >&2
+    exit 1
+fi
+exit 0
