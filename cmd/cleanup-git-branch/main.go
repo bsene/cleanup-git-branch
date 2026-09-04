@@ -37,6 +37,11 @@ func run(args []string) error {
 	c := cleaner.NewCleaner(client)
 	results, err := c.Run(cfg)
 	if err != nil {
+		// Partial failures still carry per-branch results; show them
+		// before surfacing the aggregated error.
+		if len(results) > 0 {
+			printResults(results, cfg.Yes, cfg.Verbose)
+		}
 		return err
 	}
 
