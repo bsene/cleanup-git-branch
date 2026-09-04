@@ -5,6 +5,8 @@ permalink: /
 
 # cleanup-git-branch usage guide
 
+Source: [github.com/bsene/cleanup-git-branch](https://github.com/bsene/cleanup-git-branch)
+
 ## Table of contents
 
 1. [Quick start](#quick-start)
