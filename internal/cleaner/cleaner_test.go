@@ -342,6 +342,26 @@ func TestRun_ForceDeleteFlag(t *testing.T) {
 	}
 }
 
+func TestRun_ForceDeleteSquashMerged(t *testing.T) {
+	now := time.Now()
+	stub := &stubClient{
+		isRepo:  true,
+		current: "main",
+		branches: []git.Branch{
+			{Name: "feature/squash", LastCommit: now.Add(-40 * 24 * time.Hour), Merged: true, SquashMerged: true},
+		},
+	}
+	c := NewCleaner(stub)
+	c.Now = now
+	_, err := c.Run(&config.Config{Yes: true, Merged: true, AgeDays: 30, Exclude: []string{"main"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(stub.deleted) != 1 || !stub.deleteForce[0] {
+		t.Fatalf("expected one force-deleted squash-merged branch, got deleted=%v forces=%v", stub.deleted, stub.deleteForce)
+	}
+}
+
 func TestRun_PruneRemotesDryRun(t *testing.T) {
 	stub := &stubClient{
 		isRepo:  true,

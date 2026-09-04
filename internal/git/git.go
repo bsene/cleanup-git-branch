@@ -2,6 +2,7 @@
 package git
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -10,11 +11,12 @@ import (
 
 // Branch holds metadata about a local Git branch.
 type Branch struct {
-	Name      string
-	Ref       string
-	LastCommit time.Time
-	Merged    bool
-	Current   bool
+	Name         string
+	Ref          string
+	LastCommit   time.Time
+	Merged       bool
+	Current      bool
+	SquashMerged bool
 }
 
 // Runner abstracts running git commands so tests can stub it out.
@@ -93,13 +95,26 @@ func (c *Client) ListBranches(base string) ([]Branch, error) {
 			}
 		}
 
+		squashMerged := false
+		if _, merged := mergedSet[name]; !merged && name != base {
+			var err error
+			squashMerged, err = c.isSquashMerged(base, name)
+			if err != nil {
+				return nil, err
+			}
+			if squashMerged {
+				mergedSet[name] = struct{}{}
+			}
+		}
+
 		_, merged := mergedSet[name]
 		branches = append(branches, Branch{
-			Name:       name,
-			Ref:        hash,
-			LastCommit: t,
-			Merged:     merged,
-			Current:    current,
+			Name:         name,
+			Ref:          hash,
+			LastCommit:   t,
+			Merged:       merged,
+			Current:      current,
+			SquashMerged: squashMerged,
 		})
 	}
 
@@ -132,6 +147,44 @@ func (c *Client) mergedBranches(base string) (map[string]struct{}, error) {
 		merged[line] = struct{}{}
 	}
 	return merged, nil
+}
+
+// isSquashMerged reports whether every change made on branch is already
+// present in base, even though the branch's history is not part of base.
+// It first finds the files the branch changed since the merge-base, then
+// checks whether base and branch have the same final content for exactly those
+// files. This catches squash-merged branches after base has moved forward.
+func (c *Client) isSquashMerged(base, branch string) (bool, error) {
+	mb, err := c.Runner.Run("merge-base", base, branch)
+	if err != nil {
+		return false, err
+	}
+	mb = strings.TrimSpace(mb)
+
+	files, err := c.Runner.Run("diff", "--name-only", mb+".."+branch)
+	if err != nil {
+		return false, err
+	}
+	var changed []string
+	for _, f := range strings.Split(files, "\n") {
+		if f != "" {
+			changed = append(changed, f)
+		}
+	}
+	if len(changed) == 0 {
+		// No unique changes on the branch; it is already contained in base.
+		return true, nil
+	}
+
+	_, err = c.Runner.Run(append([]string{"diff", "--quiet", base, branch, "--"}, changed...)...)
+	if err == nil {
+		return true, nil
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+		return false, nil
+	}
+	return false, err
 }
 
 // DeleteBranch removes a local branch. If force is true it uses -D.

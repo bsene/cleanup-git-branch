@@ -2,19 +2,29 @@ package git
 
 import (
 	"errors"
+	"fmt"
+	"os/exec"
 	"strings"
 	"testing"
 )
 
+// diffExitError returns an *exec.ExitError with the given exit code for tests.
+func diffExitError(exitCode int) error {
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("exit %d", exitCode))
+	return cmd.Run()
+}
+
 type stubRunner struct {
-	calls       []string
-	forEachOut  string
-	mergedOut   string
-	mergedBase  string
-	invalidBase string
-	pruneErr    error
-	remoteOut   string
-	errOn       map[string]error
+	calls            []string
+	forEachOut       string
+	mergedOut        string
+	mergedBase       string
+	invalidBase      string
+	pruneErr         error
+	remoteOut        string
+	squashMergedOf   map[string]bool
+	filesChanged     map[string][]string
+	errOn            map[string]error
 }
 
 func (s *stubRunner) Run(args ...string) (string, error) {
@@ -42,6 +52,41 @@ func (s *stubRunner) Run(args ...string) (string, error) {
 			return "", s.pruneErr
 		}
 		return "", nil
+	case "merge-base":
+		if e, ok := s.errOn["merge-base"]; ok {
+			return "", e
+		}
+		if s.invalidBase != "" && args[1] == s.invalidBase {
+			return "", errors.New("invalid ref")
+		}
+		return "base-of-" + args[2], nil
+	case "diff":
+		if e, ok := s.errOn["diff"]; ok {
+			return "", e
+		}
+		// git diff --name-only <merge-base>..<branch>
+		if len(args) >= 3 && args[1] == "--name-only" {
+			ref := args[2]
+			branch := ref
+			if i := strings.Index(ref, ".."); i >= 0 {
+				branch = ref[i+2:]
+			}
+			if files, ok := s.filesChanged[branch]; ok {
+				return strings.Join(files, "\n") + "\n", nil
+			}
+			return "", nil
+		}
+		// git diff --quiet <base> <branch> -- <files...>
+		branch := args[3]
+		if s.squashMergedOf != nil {
+			if merged, ok := s.squashMergedOf[branch]; ok {
+				if merged {
+					return "", nil
+				}
+				return "", diffExitError(1)
+			}
+		}
+		return "", diffExitError(1)
 	case "rev-parse":
 		if e, ok := s.errOn["rev-parse"]; ok {
 			return "", e
@@ -173,5 +218,67 @@ func TestListBranchesInvalidBase(t *testing.T) {
 	_, err := c.ListBranches("bad base")
 	if err == nil {
 		t.Fatal("expected error for invalid base branch")
+	}
+}
+
+func TestListBranchesSquashMerge(t *testing.T) {
+	out := strings.Join([]string{
+		"main\x00abc1234\x002024-01-15T10:00:00+00:00\x00*",
+		"feature\x00def5678\x002024-01-01 10:00:00 +0000\x00",
+	}, "\n")
+	stub := &stubRunner{
+		forEachOut:     out,
+		mergedOut:      "* main",
+		squashMergedOf: map[string]bool{"feature": true},
+		filesChanged:   map[string][]string{"feature": {"file.txt"}},
+	}
+	c := &Client{Runner: stub}
+	branches, err := c.ListBranches("main")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 2 {
+		t.Fatalf("expected 2 branches, got %d", len(branches))
+	}
+	b := branches[1]
+	if b.Name != "feature" || !b.Merged || !b.SquashMerged {
+		t.Errorf("expected feature to be flagged as merged/squash-merged, got %+v", b)
+	}
+}
+
+func TestListBranchesDiffError(t *testing.T) {
+	out := strings.Join([]string{
+		"main\x00abc1234\x002024-01-15T10:00:00+00:00\x00*",
+		"feature\x00def5678\x002024-01-01 10:00:00 +0000\x00",
+	}, "\n")
+	stub := &stubRunner{
+		forEachOut:     out,
+		mergedOut:      "* main",
+		squashMergedOf: map[string]bool{"feature": false},
+		filesChanged:   map[string][]string{"feature": {"file.txt"}},
+		errOn:          map[string]error{"diff": errors.New("diff failed")},
+	}
+	c := &Client{Runner: stub}
+	_, err := c.ListBranches("main")
+	if err == nil {
+		t.Fatal("expected error when diff fails")
+	}
+}
+
+func TestListBranchesMergeBaseError(t *testing.T) {
+	out := strings.Join([]string{
+		"main\x00abc1234\x002024-01-15T10:00:00+00:00\x00*",
+		"feature\x00def5678\x002024-01-01 10:00:00 +0000\x00",
+	}, "\n")
+	stub := &stubRunner{
+		forEachOut:   out,
+		mergedOut:    "* main",
+		errOn:        map[string]error{"merge-base": errors.New("merge-base failed")},
+		filesChanged: map[string][]string{"feature": {"file.txt"}},
+	}
+	c := &Client{Runner: stub}
+	_, err := c.ListBranches("main")
+	if err == nil {
+		t.Fatal("expected error when merge-base fails")
 	}
 }

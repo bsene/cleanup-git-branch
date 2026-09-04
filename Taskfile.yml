@@ -31,12 +31,24 @@ tasks:
             --threshold-efficacy 100
         done
 
+  smoke:
+    desc: Run smoke tests under scripts/smoke
+    cmds:
+      - |
+        set -e
+        for script in scripts/smoke/*.sh; do
+          echo "Running $script..."
+          bash "$script"
+        done
+
   verify:
-    desc: Run lint, test, and mutation testing
+    desc: Run lint, test, mutation testing, and smoke tests
     cmds:
       - task: lint
       - task: test
       - task: mutate
+      - task: build
+      - task: smoke
 
   clean:
     desc: Remove the built binary

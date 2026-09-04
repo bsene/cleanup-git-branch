@@ -92,7 +92,7 @@ func (c *Cleaner) Run(cfg *config.Config) ([]Result, error) {
 
 		res := Result{Branch: b, Reason: reason}
 		if cfg.Yes {
-			force := !b.Merged
+			force := !b.Merged || b.SquashMerged
 			if err := c.Client.DeleteBranch(b.Name, force); err != nil {
 				res.Error = err
 				errs = append(errs, fmt.Sprintf("%s: %v", b.Name, err))
