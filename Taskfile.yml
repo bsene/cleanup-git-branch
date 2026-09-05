@@ -41,6 +41,11 @@ tasks:
           bash "$script"
         done
 
+  bump:
+    desc: Show the next version candidates from bump-my-version
+    cmds:
+      - bump-my-version show-bump
+
   verify:
     desc: Run lint, test, mutation testing, and smoke tests
     cmds:
