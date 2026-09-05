@@ -95,15 +95,15 @@ func TestRun_YesDeletesStaleBranches(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(results) != 2 {
-		t.Fatalf("expected 2 results, got %d", len(results))
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
 	}
-	if len(stub.deleted) != 2 {
-		t.Fatalf("expected 2 deleted branches, got %v", stub.deleted)
+	if len(stub.deleted) != 1 || stub.deleted[0] != "feature/old" {
+		t.Fatalf("expected only merged branch deleted, got %v", stub.deleted)
 	}
 }
 
-func TestRun_MergedOnly(t *testing.T) {
+func TestRun_UnmergedSkipped(t *testing.T) {
 	stub := &stubClient{
 		isRepo:  true,
 		current: "main",
@@ -115,7 +115,7 @@ func TestRun_MergedOnly(t *testing.T) {
 	}
 	c := NewCleaner(stub)
 
-	cfg := &config.Config{Yes: true, Merged: true, AgeDays: 30, Exclude: []string{"main"}}
+	cfg := &config.Config{Yes: true, AgeDays: 30, Exclude: []string{"main"}}
 	_, err := c.Run(cfg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -331,14 +331,14 @@ func TestRun_ForceDeleteFlag(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(stub.deleted) != 2 || len(stub.deleteForce) != 2 {
-		t.Fatalf("expected 2 deletions, got %v forces %v", stub.deleted, stub.deleteForce)
+	if len(stub.deleted) != 1 || len(stub.deleteForce) != 1 {
+		t.Fatalf("expected 1 deletion, got %v forces %v", stub.deleted, stub.deleteForce)
+	}
+	if stub.deleted[0] != "feature/merged" {
+		t.Fatalf("expected merged branch deleted, got %v", stub.deleted)
 	}
 	if stub.deleteForce[0] {
 		t.Error("merged branch should use non-force delete")
-	}
-	if !stub.deleteForce[1] {
-		t.Error("unmerged branch should use force delete")
 	}
 }
 
@@ -353,7 +353,7 @@ func TestRun_ForceDeleteSquashMerged(t *testing.T) {
 	}
 	c := NewCleaner(stub)
 	c.Now = now
-	_, err := c.Run(&config.Config{Yes: true, Merged: true, AgeDays: 30, Exclude: []string{"main"}})
+	_, err := c.Run(&config.Config{Yes: true, AgeDays: 30, Exclude: []string{"main"}})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -429,13 +429,10 @@ func TestRun_ReasonFormat(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(results) != 2 {
-		t.Fatalf("expected 2 results, got %d", len(results))
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
 	}
 	if results[0].Reason != "last commit 2023-12-01, merged" {
 		t.Errorf("unexpected merged reason: %q", results[0].Reason)
-	}
-	if results[1].Reason != "last commit 2023-12-01, not merged" {
-		t.Errorf("unexpected unmerged reason: %q", results[1].Reason)
 	}
 }

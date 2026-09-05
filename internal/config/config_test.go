@@ -24,7 +24,7 @@ func TestParseDefaults(t *testing.T) {
 }
 
 func TestParseFlags(t *testing.T) {
-	cfg, err := Parse([]string{"--yes", "--age-days", "60", "--merged", "--exclude", "main,foo/*"})
+	cfg, err := Parse([]string{"--yes", "--age-days", "60", "--exclude", "main,foo/*"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -33,9 +33,6 @@ func TestParseFlags(t *testing.T) {
 	}
 	if cfg.AgeDays != 60 {
 		t.Errorf("expected age-days 60, got %d", cfg.AgeDays)
-	}
-	if !cfg.Merged {
-		t.Error("expected Merged true")
 	}
 	if len(cfg.Exclude) != 5 || cfg.Exclude[0] != "main" || cfg.Exclude[1] != "master" || cfg.Exclude[2] != "develop" || cfg.Exclude[3] != "release/*" || cfg.Exclude[4] != "foo/*" {
 		t.Errorf("unexpected excludes: %v", cfg.Exclude)
@@ -79,7 +76,6 @@ func TestParseAllFlags(t *testing.T) {
 	cfg, err := Parse([]string{
 		"--yes",
 		"--age-days", "60",
-		"--merged",
 		"--base", "develop",
 		"--exclude", "main,feature/*",
 		"--prune-remotes",
@@ -93,9 +89,6 @@ func TestParseAllFlags(t *testing.T) {
 	}
 	if cfg.AgeDays != 60 {
 		t.Errorf("expected age-days 60, got %d", cfg.AgeDays)
-	}
-	if !cfg.Merged {
-		t.Error("expected Merged true")
 	}
 	if cfg.Base != "develop" {
 		t.Errorf("expected base develop, got %q", cfg.Base)
@@ -113,12 +106,12 @@ func TestParseAllFlags(t *testing.T) {
 
 func TestParseShortFlags(t *testing.T) {
 	cfg, err := Parse([]string{
-		"-y", "-a", "45", "-m", "-b", "main", "-e", "foo/*", "-p", "-v",
+		"-y", "-a", "45", "-b", "main", "-e", "foo/*", "-p", "-v",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !cfg.Yes || cfg.AgeDays != 45 || !cfg.Merged || cfg.Base != "main" || !cfg.PruneRemotes || !cfg.Verbose {
+	if !cfg.Yes || cfg.AgeDays != 45 || cfg.Base != "main" || !cfg.PruneRemotes || !cfg.Verbose {
 		t.Errorf("unexpected config: %+v", cfg)
 	}
 	if len(cfg.Exclude) != 5 || cfg.Exclude[0] != "main" || cfg.Exclude[1] != "master" || cfg.Exclude[2] != "develop" || cfg.Exclude[3] != "release/*" || cfg.Exclude[4] != "foo/*" {

@@ -28,8 +28,8 @@ echo "=== Branches before cleanup ==="
 git branch -v
 
 echo ""
-echo "=== Run cleanup-git-branch --merged --age-days 0 --yes ==="
-"$binary" --merged --age-days 0 --yes
+echo "=== Run cleanup-git-branch --age-days 0 --yes ==="
+"$binary" --age-days 0 --yes
 
 echo ""
 echo "=== Branches after cleanup ==="

@@ -13,7 +13,6 @@ import (
 type Config struct {
 	Yes           bool
 	AgeDays       int
-	Merged        bool
 	Base          string
 	Exclude       []string
 	PruneRemotes  bool
@@ -33,7 +32,6 @@ func Parse(args []string) (*Config, error) {
 	cfg := &Config{}
 	fs.BoolVarP(&cfg.Yes, "yes", "y", false, "Actually delete branches (default: dry-run)")
 	fs.IntVarP(&cfg.AgeDays, "age-days", "a", 30, "Minimum age in days for a branch to be considered stale")
-	fs.BoolVarP(&cfg.Merged, "merged", "m", false, "Only consider branches merged into the base branch")
 	fs.StringVarP(&cfg.Base, "base", "b", "", "Base branch to check merge status against (default: current branch)")
 	fs.StringSliceVarP(&cfg.Exclude, "exclude", "e", defaultExcludes, "Glob patterns protecting branches from deletion")
 	fs.BoolVarP(&cfg.PruneRemotes, "prune-remotes", "p", false, "Prune remote-tracking refs after local cleanup")

@@ -79,20 +79,15 @@ func (c *Cleaner) Run(cfg *config.Config) ([]Result, error) {
 		if b.LastCommit.After(cutoff) {
 			continue
 		}
-		if cfg.Merged && !b.Merged {
+		if !b.Merged {
 			continue
 		}
 
-		reason := fmt.Sprintf("last commit %s", b.LastCommit.Format("2006-01-02"))
-		if b.Merged {
-			reason += ", merged"
-		} else {
-			reason += ", not merged"
-		}
+		reason := fmt.Sprintf("last commit %s, merged", b.LastCommit.Format("2006-01-02"))
 
 		res := Result{Branch: b, Reason: reason}
 		if cfg.Yes {
-			force := !b.Merged || b.SquashMerged
+			force := b.SquashMerged
 			if err := c.Client.DeleteBranch(b.Name, force); err != nil {
 				res.Error = err
 				errs = append(errs, fmt.Sprintf("%s: %v", b.Name, err))

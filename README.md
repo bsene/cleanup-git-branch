@@ -9,8 +9,7 @@ removed.
 - **Dry-run by default** — review candidates before deleting anything.
 - **Age-based filtering** — only consider branches whose last commit is older
   than a configurable number of days.
-- **Merged-only mode** — optionally restrict cleanup to branches already
-  merged into a base branch.
+- **Merged-only** — only deletes branches already merged into a base branch.
 - **Protected patterns** — exclude branches by glob patterns (`main`,
   `master`, `release/*`, etc.).
 - **Remote-tracking cleanup** — optionally prune stale remote-tracking refs.
@@ -47,10 +46,10 @@ cleanup-git-branch --yes
 cleanup-git-branch --age-days 60
 
 # Only delete branches already merged into the current branch
-cleanup-git-branch --merged
+cleanup-git-branch
 
 # Use a different base branch
-cleanup-git-branch --merged --base origin/main
+cleanup-git-branch --base origin/main
 
 # Protect additional patterns
 cleanup-git-branch --exclude "main,master,hotfix/*"
@@ -64,7 +63,6 @@ cleanup-git-branch --yes --prune-remotes
 ```
 -y, --yes              Actually delete branches (default: dry-run)
 -a, --age-days int     Minimum age in days for a branch to be considered stale (default 30)
--m, --merged           Only consider branches merged into the base branch
 -b, --base string      Base branch to check merge status against (default: current branch)
 -e, --exclude strings  Glob patterns protecting branches from deletion
                        (default [main,master,develop,release/*])
@@ -77,8 +75,8 @@ cleanup-git-branch --yes --prune-remotes
 
 - The tool never deletes the currently checked-out branch.
 - `--yes` is required to perform actual deletions.
-- Unmerged branches are deleted with `git branch -D`; merged branches use
-  `git branch -d`. Use `--merged` to avoid force-deleting unmerged work.
+- Only branches merged into the base branch are deleted. Unmerged branches are
+  always kept, so unmerged work is never lost.
 
 ## Documentation
 
