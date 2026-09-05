@@ -14,7 +14,7 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 project_root="$(cd "$script_dir/../.." && pwd)"
-state_file="/tmp/cleanup-git-branch-smoke-state"
+state_file="${TMPDIR:-/tmp}/cleanup-git-branch-smoke-state"
 worktree="/tmp/git-test"
 
 # Build a fresh binary.
@@ -23,8 +23,10 @@ worktree="/tmp/git-test"
 # Reset any leftover worktree from a previous run so this is re-runnable.
 if [[ -d "$worktree" ]]; then
   git -C "$project_root" worktree remove --force "$worktree"
-  git -C "$project_root" branch -D dummy-base >/dev/null 2>&1 || true
 fi
+for b in dummy-base feature-1 feature-2 feature-3; do
+  git -C "$project_root" branch -D "$b" >/dev/null 2>&1 || true
+done
 
 # Create a worktree on a new dummy-base branch.
 git -C "$project_root" worktree add -b dummy-base "$worktree"
